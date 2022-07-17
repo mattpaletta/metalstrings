@@ -10,51 +10,6 @@ using namespace metal;
 
 typedef int value_type;
 
-//kernel void prefixSum(device int* vIn [[ buffer(0) ]], uint id [[ thread_position_in_grid ]]) {
-//    vIn[id] = vIn[id] * vIn[id];
-//}
-
-//template<size_t N>
-//void prescanVariable(device value_type* g_odata, const device value_type* g_idata, threadgroup value_type* temp [[ threadgroup(0) ]], uint thid) {
-//    int offset = 1;
-//    temp[2 * thid] = g_idata[2 * thid];  // load memory into shared memory temp[2*thid+1] = g_idata[2*thid+1];
-//    for (int d = N >> 1; d > 0; d >>= 1) {
-//        // build sum in place up the tree {
-//        threadgroup_barrier(mem_flags::mem_none);
-//        if (thid < d) {
-//            int ai = offset * (2 * thid + 1) - 1;
-//            int bi = offset * (2 * thid + 2) - 1;
-//            temp[bi] += temp[ai];
-//        }
-//
-//        offset *= 2;
-//    }
-//
-//    if (thid == 0) {
-//        temp[N - 1] = 0; // Clear the last element
-//    }
-//
-//    for (int d = 1; d < N; d *= 2) {
-//        // Traverse down the tree & build scan
-//        offset >>= 1;
-//        threadgroup_barrier(mem_flags::mem_none);
-//        if (thid < d) {
-//            int ai = offset * (2 * thid + 1) - 1;
-//            int bi = offset * (2 * thid + 2) - 1;
-//
-//            value_type t = temp[ai];
-//            temp[ai] = temp[bi];
-//            temp[bi] += t;
-//        }
-//    }
-//
-//    threadgroup_barrier(mem_flags::mem_none);
-//
-//    // Write results to device memory
-//    g_odata[2 * thid] = temp[2 * thid];
-//}
-
-
 // https://kieber-emmons.medium.com/efficient-parallel-prefix-sum-in-metal-for-apple-m1-9e60b974d62
 //
 //  ParallelScan.metal

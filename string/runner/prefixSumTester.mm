@@ -12,24 +12,30 @@
 
 #include <iostream>
 #include <vector>
+#include <array>
 
 namespace {
     template<typename T>
     std::vector<T> generateVector(std::size_t size) {
         std::vector<T> output(size);
         for (std::size_t i = 0; i < size; ++i) {
-            if (i % 10) {
-                if (i % 5 > i % 3) {
-                    output.at(i) = i % 6;
-                } else {
-                    output.at(i) = i % 8;
-                }
+//            if (i % 10) {
+//                if (i % 5 > i % 3) {
+//                    output.at(i) = i % 6;
+//                } else {
+//                    output.at(i) = i % 8;
+//                }
+//            } else {
+//                if (i % 2) {
+//                    output.at(i) = i % 3;
+//                } else {
+//                    output.at(i) = i % 7;
+//                }
+//            }
+            if (i == 0) {
+                output.at(i) = 12;
             } else {
-                if (i % 2) {
-                    output.at(i) = i % 3;
-                } else {
-                    output.at(i) = i % 7;
-                }
+                output.at(i) = 8;
             }
         }
 
@@ -151,6 +157,60 @@ namespace {
     }
 }
 
+template<typename T>
+std::vector<T> prefixSum2(const std::vector<T>& lst) {
+    constexpr auto simdWidth = 32;
+
+    // Calculate reduce within simd group
+    std::vector<T> scan;
+    for (std::size_t i = 0; i < lst.size(); i += simdWidth) {
+        std::vector<T> simdCopy;
+        for (std::size_t j = 0; j < simdWidth; ++j) {
+            if (i + j < lst.size()) {
+                simdCopy.push_back( lst.at(i + j) );
+            }
+        }
+
+        for (const auto& elem : prefixSum(simdCopy)) {
+            // This should be elements 0 -> 31 over and over.
+            scan.push_back(elem);
+        }
+    }
+
+    std::vector<T> sharedData;
+    sharedData.resize(simdWidth);
+    for (std::size_t thread = 0; thread < lst.size(); ++thread) {
+        if ( (thread % simdWidth) == 31) {
+            sharedData[thread / simdWidth] = scan.at(thread) + lst.at(thread);
+        }
+    }
+
+    std::vector<T> sharedData2 = prefixSum(sharedData);
+
+    // Add the elements
+    for (std::size_t i = 0; i < lst.size(); ++i) {
+        scan.at(i) += sharedData2.at(i / simdWidth);
+    }
+    return scan;
+}
+
+
+template<typename T>
+bool isDifferent(std::vector<T> lst, std::vector<T> lst1) {
+    bool isDiff = false;
+    for (std::size_t i = 0; i < lst1.size(); ++i) {
+        int a = lst.at(i);
+        int b = lst1.at(i);
+        if (a != b) {
+            isDiff = true;
+            break;
+        }
+    }
+
+    return isDiff;
+}
+
+
 @implementation PrefixSumTester
 
 -(void)testStrcmp {
@@ -197,8 +257,16 @@ namespace {
     }
 }
 
+-(void)testPrefixSum2 {
+    auto lst = generateVector<std::size_t>(150);
+    auto sum = prefixSum(lst);
+    auto sum2 = prefixSum2(lst);
+
+    std::cout << "Is Different: " << (isDifferent(sum, sum2) ? "yes" : "no") << std::endl;
+}
+
 -(void)testPrefixSum {
-    [self testStrcmp];
+    [self testPrefixSum2];
 
     return;
 
